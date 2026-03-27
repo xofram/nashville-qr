@@ -3,106 +3,101 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Nashville — Tu cupón</title>
+  <meta name="theme-color" content="#080808">
+  <title>Nashville — Tu cupón exclusivo</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;900&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Barlow+Condensed:wght@700;900&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <div class="mesh" aria-hidden="true">
+    <div class="mesh__orb mesh__orb--1"></div>
+    <div class="mesh__orb mesh__orb--2"></div>
+    <div class="mesh__orb mesh__orb--3"></div>
+  </div>
+  <div class="grain" aria-hidden="true"></div>
 
-  <!-- Fondo con textura -->
-  <div class="bg-texture" aria-hidden="true"></div>
-  <div class="bg-glow"    aria-hidden="true"></div>
+  <!-- ① INTRO -->
+  <div class="screen" id="screenIntro">
+    <div class="intro">
+      <img src="4_Isologo.png" alt="Nashville" class="intro__logo" width="120" height="120">
+    </div>
+  </div>
 
-  <!-- Estado: cargando -->
-  <div class="screen" id="screenLoading">
-    <div class="loader">
+  <!-- ② CARGANDO -->
+  <div class="screen is-hidden" id="screenLoading">
+    <div class="loader" aria-label="Cargando tu cupón">
       <span></span><span></span><span></span>
     </div>
   </div>
 
-  <!-- Estado: cupón listo -->
-  <div class="screen hidden" id="screenCoupon">
-    <main class="card">
-
-      <!-- Logo -->
-      <div class="logo-wrap">
-        <img src="4_Isologo.png" alt="Nashville" class="logo" width="120" height="120">
-      </div>
-
-      <!-- Título -->
-      <div class="brand-row">
-        <h1 class="brand">NASH<em>VILLE</em></h1>
-        <p class="brand-sub">HAMBURGUESAS · CÓRDOBA</p>
-      </div>
-
-      <!-- Cupón -->
-      <div class="coupon" id="couponBox" role="region" aria-label="Tu cupón de descuento">
-        <div class="coupon-edge coupon-edge--left"  aria-hidden="true"></div>
-        <div class="coupon-edge coupon-edge--right" aria-hidden="true"></div>
-
-        <p class="coupon-label">Tu cupón de descuento</p>
-        <p class="coupon-code" id="couponCode">· · · ·</p>
-        <p class="coupon-offer">5% OFF en tu primer pedido</p>
-
-        <button class="copy-btn" id="copyBtn" aria-label="Copiar código">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="9" y="9" width="13" height="13" rx="2"/>
-            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-          </svg>
+  <!-- ③ CUPÓN -->
+  <div class="screen is-hidden" id="screenCoupon">
+    <main class="card" role="main">
+      <header class="card__header">
+        <img src="4_Isologo.png" alt="Nashville" class="card__logo" width="64" height="64">
+        <div>
+          <h1 class="card__brand">NASH<em>VILLE</em></h1>
+          <p class="card__tagline">Hamburguesas · Córdoba</p>
+        </div>
+      </header>
+      <div class="divider" aria-hidden="true"></div>
+      <section class="coupon" aria-label="Tu cupón de descuento">
+        <p class="coupon__label">Tu cupón exclusivo</p>
+        <p class="coupon__code" id="couponCode">·····</p>
+        <p class="coupon__offer">5% OFF · Válido 72 horas · Primer pedido</p>
+        <button class="btn-copy" id="copyBtn" aria-label="Copiar código del cupón">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
           <span id="copyLabel">Copiar código</span>
         </button>
-
-        <div class="coupon-divider" aria-hidden="true">
-          <span></span><span class="dot-row"></span><span></span>
-        </div>
-
-        <!-- Cuenta regresiva -->
-        <div class="countdown" aria-live="polite">
-          <p class="countdown-label">Expira en</p>
-          <div class="countdown-grid">
-            <div class="countdown-block">
-              <span class="countdown-num" id="cdHours">72</span>
-              <span class="countdown-unit">hs</span>
-            </div>
-            <span class="countdown-sep">:</span>
-            <div class="countdown-block">
-              <span class="countdown-num" id="cdMinutes">00</span>
-              <span class="countdown-unit">min</span>
-            </div>
-            <span class="countdown-sep">:</span>
-            <div class="countdown-block">
-              <span class="countdown-num" id="cdSeconds">00</span>
-              <span class="countdown-unit">seg</span>
-            </div>
-          </div>
-        </div>
+      </section>
+      <div class="ticket-tear" aria-hidden="true">
+        <span class="ticket-tear__notch ticket-tear__notch--l"></span>
+        <span class="ticket-tear__line"></span>
+        <span class="ticket-tear__notch ticket-tear__notch--r"></span>
       </div>
-
-      <!-- CTA WhatsApp -->
-      <a class="wa-btn" id="waBtn" href="#" role="button">
-        <svg class="wa-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-        </svg>
+      <section class="countdown" aria-label="Tiempo restante">
+        <p class="countdown__label">Expira en</p>
+        <div class="countdown__grid">
+          <div class="countdown__block"><span class="countdown__num" id="cdHours">72</span><span class="countdown__unit">hs</span></div>
+          <span class="countdown__sep" aria-hidden="true">:</span>
+          <div class="countdown__block"><span class="countdown__num" id="cdMinutes">00</span><span class="countdown__unit">min</span></div>
+          <span class="countdown__sep" aria-hidden="true">:</span>
+          <div class="countdown__block"><span class="countdown__num" id="cdSeconds">00</span><span class="countdown__unit">seg</span></div>
+        </div>
+      </section>
+      <a class="btn-wa" id="waBtn" href="#" role="button">
+        <svg class="btn-wa__icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
         Canjear mi cupón por WhatsApp
       </a>
-
-      <p class="footer-note">Al tocar el botón se abre WhatsApp con el mensaje listo ✓</p>
-
+      <p class="card__footnote">Al tocar el botón se abre WhatsApp con el mensaje listo ✓</p>
     </main>
   </div>
 
-  <!-- Estado: error -->
-  <div class="screen hidden" id="screenError">
-    <div class="error-card">
-      <div class="error-icon" aria-hidden="true">⚠️</div>
-      <h2 class="error-title">Algo salió mal</h2>
-      <p class="error-msg">No pudimos generar tu cupón. Escribinos directamente por WhatsApp y te lo damos igual.</p>
-      <a class="wa-btn wa-btn--alt" href="https://wa.me/5493517886903" role="button">
-        <svg class="wa-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-        </svg>
+  <!-- ④ COOLDOWN -->
+  <div class="screen is-hidden" id="screenCooldown">
+    <div class="card card--alt" role="alert" aria-live="polite">
+      <div class="alt__icon" aria-hidden="true">⏳</div>
+      <h2 class="alt__title">Ya tenés un cupón activo</h2>
+      <p class="alt__msg">Por seguridad limitamos la cantidad de cupones por dispositivo. Tu próximo cupón estará disponible en:</p>
+      <div class="cooldown__timer" id="cooldownTimer">--:--:--</div>
+      <p class="alt__sub">¿Ya tenés tu código? Escribinos y lo canjeamos sin problema.</p>
+      <a class="btn-wa btn-wa--outline" href="https://wa.me/5493517886903" role="button">
+        <svg class="btn-wa__icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        Escribirnos por WhatsApp
+      </a>
+    </div>
+  </div>
+
+  <!-- ⑤ ERROR -->
+  <div class="screen is-hidden" id="screenError">
+    <div class="card card--alt" role="alert">
+      <div class="alt__icon" aria-hidden="true">⚠️</div>
+      <h2 class="alt__title">Algo salió mal</h2>
+      <p class="alt__msg">No pudimos generar tu cupón. Escribinos por WhatsApp y te lo damos igual.</p>
+      <a class="btn-wa btn-wa--outline" href="https://wa.me/5493517886903" role="button">
+        <svg class="btn-wa__icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
         Contactar por WhatsApp
       </a>
     </div>
