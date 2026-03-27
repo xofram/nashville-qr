@@ -1,226 +1,535 @@
-/* ============================================================
-   NASHVILLE — APP.JS v3
-   Flujo: cooldown check → loader → cupón → [click WA] → log
-   ============================================================ */
+/* ================================================================
+   NASHVILLE — APP.JS v4
+   Arquitectura: máquina de estados + storage estructurado + modo admin
 
-// ── CONFIG ───────────────────────────────────────────────────
-const CONFIG = {
+   ESTADOS:
+     loading    → pantalla inicial siempre
+     coupon     → primera vez, genera y muestra el cupón
+     returning  → ya canjeó, muestra su código con metadata
+     cooldown   → generó hace poco, espera con timer
+     error      → algo falló, fallback WA
+
+   STORAGE (localStorage key: 'nash_v2'):
+     {
+       coupon:      string,        código generado
+       generatedAt: number,        timestamp ms
+       redeemedAt:  number|null,   timestamp al tocar WA
+       tipo:        string,        origen del QR
+       expiresAt:   number,        generatedAt + 72hs
+     }
+
+   MODO ADMIN:
+     Agregar ?admin=1 a la URL para saltear el cooldown siempre.
+     Útil para testing sin tener que borrar el storage.
+================================================================ */
+
+'use strict';
+
+/* ── CONFIG ──────────────────────────────────────────────────── */
+var CONFIG = {
   SCRIPT_URL:    'https://script.google.com/macros/s/AKfycbwpidh1tETWntQFplSNmdbCy7KAFSlrtBF_O3TnTkezzPIBcbpooNvsQDVRoORuijxwgg/exec',
   WA_NUMBER:     '5493517886903',
-  COUPON_EXPIRY: 72,    // horas de validez del cupón
-  COOLDOWN_MIN:  15,    // minutos entre generaciones
-  GEO_TIMEOUT:   3000,  // ms máximo para esperar geo
-  STORAGE_KEY:   'nash_last_gen',
+  COUPON_EXPIRY: 72,        /* horas */
+  COOLDOWN_MIN:  15,        /* minutos entre generaciones */
+  GEO_TIMEOUT:   3500,      /* ms máximo para geo */
+  LOADER_MIN:    1000,      /* ms mínimo que se muestra el loader */
+  STORAGE_KEY:   'nash_v2', /* clave en localStorage */
+  CHARS:         'ABCDEFGHJKLMNPQRSTUVWXYZ23456789', /* sin I,O,0,1 */
 };
-// ─────────────────────────────────────────────────────────────
 
-// ── COOLDOWN ─────────────────────────────────────────────────
+/* ── STORAGE ─────────────────────────────────────────────────── */
+/*
+   Toda la interacción con localStorage pasa por estas tres funciones.
+   Si localStorage no está disponible (modo incógnito extremo, algunos
+   iOS WebViews), las funciones devuelven null/false silenciosamente.
+*/
 
-function getCooldownState() {
+function storageGet() {
   try {
-    const raw = localStorage.getItem(CONFIG.STORAGE_KEY);
+    var raw = localStorage.getItem(CONFIG.STORAGE_KEY);
     if (!raw) return null;
-    return JSON.parse(raw);
-  } catch {
+    var parsed = JSON.parse(raw);
+    /* Validar que tenga los campos mínimos esperados */
+    if (!parsed || !parsed.coupon || !parsed.generatedAt) return null;
+    return parsed;
+  } catch (e) {
     return null;
   }
 }
 
-function saveCooldownState(coupon) {
+function storageSet(data) {
   try {
-    localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify({
-      coupon,
-      generatedAt: Date.now(),
-    }));
-  } catch { /* localStorage bloqueado → ignorar */ }
+    localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(data));
+    return true;
+  } catch (e) {
+    return false; /* localStorage lleno o bloqueado */
+  }
 }
 
-function getRemainingCooldownMs() {
-  const state = getCooldownState();
-  if (!state) return 0;
-  const windowMs  = CONFIG.COOLDOWN_MIN * 60 * 1000;
-  const remaining = windowMs - (Date.now() - state.generatedAt);
+function storageMark(field, value) {
+  /* Actualiza un campo del registro existente */
+  try {
+    var current = storageGet();
+    if (!current) return false;
+    current[field] = value;
+    return storageSet(current);
+  } catch (e) {
+    return false;
+  }
+}
+
+/* ── LÓGICA DE ESTADOS ───────────────────────────────────────── */
+
+function isAdminMode() {
+  try {
+    return new URLSearchParams(window.location.search).get('admin') === '1';
+  } catch (e) {
+    return false;
+  }
+}
+
+function getCooldownRemainingMs(record) {
+  if (!record) return 0;
+  if (isAdminMode()) return 0; /* Admin siempre pasa */
+  var windowMs  = CONFIG.COOLDOWN_MIN * 60 * 1000;
+  var elapsed   = Date.now() - record.generatedAt;
+  var remaining = windowMs - elapsed;
   return remaining > 0 ? remaining : 0;
 }
 
-// ── GEO ──────────────────────────────────────────────────────
+function isCouponExpired(record) {
+  if (!record || !record.expiresAt) return true;
+  return Date.now() > record.expiresAt;
+}
 
-async function getGeo() {
+/*
+   Determina qué estado mostrar al cargar.
+   Retorna: 'coupon' | 'returning' | 'cooldown'
+*/
+function resolveInitialState() {
+  var record = storageGet();
+
+  /* Sin historial → primera vez */
+  if (!record) return { state: 'coupon', record: null };
+
+  /* Cupón vencido → puede generar uno nuevo */
+  if (isCouponExpired(record)) return { state: 'coupon', record: null };
+
+  /* Cooldown activo → debe esperar */
+  var remaining = getCooldownRemainingMs(record);
+  if (remaining > 0) return { state: 'cooldown', record: record, remainingMs: remaining };
+
+  /* Ya tiene cupón vigente → mostrar su código */
+  return { state: 'returning', record: record };
+}
+
+/* ── GEO ─────────────────────────────────────────────────────── */
+
+function getGeo() {
+  return new Promise(function(resolve) {
+    var done = false;
+    var timer = setTimeout(function() {
+      if (!done) { done = true; resolve({}); }
+    }, CONFIG.GEO_TIMEOUT);
+
+    fetch('https://ipapi.co/json/')
+      .then(function(res) {
+        if (!res.ok) throw new Error('geo-fail');
+        return res.json();
+      })
+      .then(function(data) {
+        clearTimeout(timer);
+        if (!done) {
+          done = true;
+          if (data.error) { resolve({}); return; }
+          resolve({
+            lat:    data.latitude  != null ? data.latitude  : '',
+            lon:    data.longitude != null ? data.longitude : '',
+            city:   data.city   || '',
+            region: data.region || '',
+          });
+        }
+      })
+      .catch(function() {
+        clearTimeout(timer);
+        if (!done) { done = true; resolve({}); }
+      });
+  });
+}
+
+/* ── LOG → SHEET ─────────────────────────────────────────────── */
+
+function logToSheet(coupon, tipo, geo) {
+  if (!CONFIG.SCRIPT_URL || CONFIG.SCRIPT_URL.indexOf('TU_APPS') !== -1) return;
+
+  var params = new URLSearchParams({
+    coupon: coupon,
+    tipo:   tipo,
+    lat:    geo.lat    != null ? geo.lat    : '',
+    lon:    geo.lon    != null ? geo.lon    : '',
+    city:   geo.city   || '',
+    region: geo.region || '',
+  });
+
+  fetch(CONFIG.SCRIPT_URL + '?' + params.toString(), { mode: 'no-cors' })
+    .catch(function() { /* silencioso */ });
+}
+
+/* ── GENERAR CUPÓN ───────────────────────────────────────────── */
+
+function generateCouponCode() {
+  var code = 'NASH-';
+  for (var i = 0; i < 4; i++) {
+    code += CONFIG.CHARS[Math.floor(Math.random() * CONFIG.CHARS.length)];
+  }
+  return code;
+}
+
+/* ── FORMATEAR FECHA ─────────────────────────────────────────── */
+
+function formatDate(ts) {
+  if (!ts) return '—';
   try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), CONFIG.GEO_TIMEOUT);
-    const res = await fetch('https://ipapi.co/json/', { signal: controller.signal });
-    clearTimeout(timer);
-    if (!res.ok) return {};
-    const data = await res.json();
-    if (data.error) return {};
-    return {
-      lat:    data.latitude  ?? '',
-      lon:    data.longitude ?? '',
-      city:   data.city      ?? '',
-      region: data.region    ?? '',
-    };
-  } catch {
-    return {};
+    var d = new Date(ts);
+    var day = String(d.getDate()).padStart(2, '0');
+    var mon = String(d.getMonth() + 1).padStart(2, '0');
+    var hr  = String(d.getHours()).padStart(2, '0');
+    var min = String(d.getMinutes()).padStart(2, '0');
+    return day + '/' + mon + ' ' + hr + ':' + min + 'hs';
+  } catch (e) {
+    return '—';
   }
 }
 
-// ── LOG → SHEET ──────────────────────────────────────────────
+/* ── COPIAR AL PORTAPAPELES ──────────────────────────────────── */
 
-function logScan({ tipo, coupon, geo }) {
-  if (!CONFIG.SCRIPT_URL || CONFIG.SCRIPT_URL.includes('TU_APPS')) return;
-  const params = new URLSearchParams({
-    tipo,
-    coupon,
-    lat:    geo.lat    ?? '',
-    lon:    geo.lon    ?? '',
-    city:   geo.city   ?? '',
-    region: geo.region ?? '',
-  });
-  fetch(CONFIG.SCRIPT_URL + '?' + params.toString(), { mode: 'no-cors' }).catch(() => {});
-}
-
-// ── COUNTDOWN CUPÓN (72hs) ───────────────────────────────────
-
-function startCouponCountdown(hours) {
-  let total = hours * 3600;
-  const elH = document.getElementById('cdHours');
-  const elM = document.getElementById('cdMinutes');
-  const elS = document.getElementById('cdSeconds');
-  const pad = function(n) { return String(n).padStart(2, '0'); };
-  function tick() {
-    if (total <= 0) { elH.textContent = elM.textContent = elS.textContent = '00'; return; }
-    elH.textContent = pad(Math.floor(total / 3600));
-    elM.textContent = pad(Math.floor((total % 3600) / 60));
-    elS.textContent = pad(total % 60);
-    total--;
-  }
-  tick();
-  setInterval(tick, 1000);
-}
-
-// ── COUNTDOWN COOLDOWN ───────────────────────────────────────
-
-function startCooldownCountdown(remainingMs) {
-  let total = Math.ceil(remainingMs / 1000);
-  const el  = document.getElementById('cooldownTimer');
-  const pad = function(n) { return String(n).padStart(2, '0'); };
-  function tick() {
-    if (total <= 0) { location.reload(); return; }
-    el.textContent = pad(Math.floor(total / 60)) + ':' + pad(total % 60);
-    total--;
-  }
-  tick();
-  setInterval(tick, 1000);
-}
-
-// ── COPIAR ───────────────────────────────────────────────────
-
-function setupCopyButton(coupon) {
-  var btn   = document.getElementById('copyBtn');
-  var label = document.getElementById('copyLabel');
-  btn.addEventListener('click', function() {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(coupon).catch(function() { fallbackCopy(coupon); });
-    } else {
-      fallbackCopy(coupon);
-    }
-    btn.classList.add('copied');
-    label.textContent = '¡Copiado!';
+function copyToClipboard(text, btnEl, labelEl, defaultLabel) {
+  function onSuccess() {
+    btnEl.classList.add('is-copied');
+    labelEl.textContent = '¡Copiado!';
     setTimeout(function() {
-      btn.classList.remove('copied');
-      label.textContent = 'Copiar código';
+      btnEl.classList.remove('is-copied');
+      labelEl.textContent = defaultLabel || 'Copiar';
     }, 2400);
-  });
+  }
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(onSuccess).catch(function() {
+      fallbackCopy(text, onSuccess);
+    });
+  } else {
+    fallbackCopy(text, onSuccess);
+  }
 }
 
-function fallbackCopy(text) {
+function fallbackCopy(text, callback) {
   var ta = document.createElement('textarea');
   ta.value = text;
-  ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0';
+  ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;pointer-events:none';
   document.body.appendChild(ta);
   ta.focus();
   ta.select();
-  try { document.execCommand('copy'); } catch(e) {}
+  try {
+    document.execCommand('copy');
+    if (callback) callback();
+  } catch (e) { /* no se pudo copiar */ }
   document.body.removeChild(ta);
 }
 
-// ── PANTALLAS ────────────────────────────────────────────────
+/* ── TIMERS ──────────────────────────────────────────────────── */
 
-function showScreen(id) {
-  document.querySelectorAll('.screen').forEach(function(s) {
-    s.classList.add('is-hidden');
-  });
-  document.getElementById(id).classList.remove('is-hidden');
+function pad2(n) {
+  return String(n).padStart(2, '0');
 }
 
-// ── INIT ─────────────────────────────────────────────────────
+/*
+   Timer del cupón: cuenta regresiva de 72hs
+   Se muestra en la pantalla 'coupon'
+*/
+function startCouponTimer(expiresAt) {
+  var elH = document.getElementById('cdH');
+  var elM = document.getElementById('cdM');
+  var elS = document.getElementById('cdS');
 
-function init() {
-  var startedAt = Date.now();
-  showScreen('screenLoading');
-
-  // 1. Cooldown check — antes de hacer cualquier otra cosa
-  var remainingMs = getRemainingCooldownMs();
-  if (remainingMs > 0) {
-    showScreen('screenCooldown');
-    startCooldownCountdown(remainingMs);
-    return;
+  function tick() {
+    var remaining = Math.max(0, expiresAt - Date.now());
+    var totalSecs = Math.floor(remaining / 1000);
+    var h = Math.floor(totalSecs / 3600);
+    var m = Math.floor((totalSecs % 3600) / 60);
+    var s = totalSecs % 60;
+    elH.textContent = pad2(h);
+    elM.textContent = pad2(m);
+    elS.textContent = pad2(s);
+    if (remaining > 0) {
+      setTimeout(tick, 1000);
+    }
   }
 
-  // 2. Tipo desde URL
-  var tipo = new URLSearchParams(window.location.search).get('tipo') || 'desconocido';
+  tick();
+}
 
-  // 3. Generar cupón
-  var chars  = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  var coupon = 'NASH-';
-  for (var i = 0; i < 4; i++) {
-    coupon += chars[Math.floor(Math.random() * chars.length)];
+/*
+   Timer del cooldown: cuenta regresiva hasta que puede generar uno nuevo
+   Al llegar a 0 recarga la página
+*/
+function startCooldownTimer(remainingMs) {
+  var el = document.getElementById('cooldownDisplay');
+  var endAt = Date.now() + remainingMs;
+
+  function tick() {
+    var remaining = Math.max(0, endAt - Date.now());
+    var totalSecs = Math.floor(remaining / 1000);
+    var m = Math.floor(totalSecs / 60);
+    var s = totalSecs % 60;
+    el.textContent = pad2(m) + ':' + pad2(s);
+
+    if (remaining <= 0) {
+      location.reload();
+    } else {
+      setTimeout(tick, 1000);
+    }
   }
 
-  // 4. Guardar cooldown en el dispositivo YA
-  //    (antes de la geo, para que aunque falle todo, no genere de nuevo)
-  saveCooldownState(coupon);
+  tick();
+}
 
-  // 5. Geo en paralelo — no bloquea la UI
-  var geoPromise = getGeo();
+/* ── MÁQUINA DE PANTALLAS ────────────────────────────────────── */
 
-  // 6. Poblar UI inmediatamente
-  document.getElementById('couponCode').textContent = coupon;
+var currentScreen = null;
 
+function showScreen(id) {
+  /* Ocultar pantalla actual */
+  if (currentScreen) {
+    currentScreen.classList.add('is-off');
+    currentScreen.classList.remove('is-entering');
+  }
+
+  /* Mostrar nueva */
+  var next = document.getElementById(id);
+  if (!next) return;
+  next.classList.remove('is-off');
+  /* Forzar reflow para que la animación arranque desde cero */
+  void next.offsetWidth;
+  next.classList.add('is-entering');
+  currentScreen = next;
+}
+
+/* ── CONSTRUIR URL DE WHATSAPP ───────────────────────────────── */
+
+function buildWaUrl(coupon) {
   var msg = [
     '¡Hola Nashville! 🍔 Vi su poster por el barrio y no pude resistirme.',
     'Quiero canjear mi cupón del 5% OFF.',
     'Mi código es: *' + coupon + '*',
     '¿Cuándo puedo hacer mi pedido?',
   ].join('\n');
+  return 'https://wa.me/' + CONFIG.WA_NUMBER + '?text=' + encodeURIComponent(msg);
+}
 
-  var waBtn = document.getElementById('waBtn');
-  waBtn.href = 'https://wa.me/' + CONFIG.WA_NUMBER + '?text=' + encodeURIComponent(msg);
+/* ── INICIALIZAR PANTALLA: COUPON ────────────────────────────── */
 
-  // 7. Registrar en Sheet SOLO cuando el usuario toca WhatsApp
+function initCouponScreen(tipo, geoPromise) {
+  var coupon    = generateCouponCode();
+  var now       = Date.now();
+  var expiresAt = now + CONFIG.COUPON_EXPIRY * 60 * 60 * 1000;
+
+  /* Guardar en storage antes de mostrar (protege contra cierre rápido) */
+  var record = {
+    coupon:      coupon,
+    generatedAt: now,
+    expiresAt:   expiresAt,
+    redeemedAt:  null,
+    tipo:        tipo,
+  };
+  storageSet(record);
+
+  /* Poblar UI */
+  document.getElementById('couponDisplay').textContent = coupon;
+
+  var waUrl  = buildWaUrl(coupon);
+  var waBtn  = document.getElementById('waBtn');
+  waBtn.href = waUrl;
+
+  /* Registrar en Sheet SOLO al tocar WhatsApp */
   var logged = false;
   waBtn.addEventListener('click', function() {
     if (logged) return;
     logged = true;
+    storageMark('redeemedAt', Date.now());
     geoPromise.then(function(geo) {
-      logScan({ tipo: tipo, coupon: coupon, geo: geo });
+      logToSheet(coupon, tipo, geo);
     });
   });
 
-  // 8. Extras
-  setupCopyButton(coupon);
-  startCouponCountdown(CONFIG.COUPON_EXPIRY);
+  /* Botón copiar */
+  var copyBtn   = document.getElementById('copyBtn');
+  var copyLabel = document.getElementById('copyLabel');
+  copyBtn.addEventListener('click', function() {
+    copyToClipboard(coupon, copyBtn, copyLabel, 'Copiar');
+  });
 
-  // 9. Loader mínimo 900ms para que el logo se vea animado
-  var elapsed = Date.now() - startedAt;
-  var wait    = Math.max(0, 900 - elapsed);
-  setTimeout(function() { showScreen('screenCoupon'); }, wait);
+  /* Timer 72hs */
+  startCouponTimer(expiresAt);
+
+  showScreen('s-coupon');
 }
 
-// Arrancar cuando el DOM esté listo
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', init);
-} else {
+/* ── INICIALIZAR PANTALLA: RETURNING ─────────────────────────── */
+
+function initReturningScreen(record) {
+  /* Poblar datos del cupón guardado */
+  document.getElementById('returningCode').textContent = record.coupon;
+  document.getElementById('returningDate').textContent   = formatDate(record.generatedAt);
+  document.getElementById('returningExpiry').textContent = formatDate(record.expiresAt);
+
+  var statusEl = document.getElementById('returningStatus');
+  statusEl.textContent = record.redeemedAt ? 'Canjeado ✓' : 'Pendiente';
+
+  /* Botón copiar */
+  var copyBtn   = document.getElementById('returningCopyBtn');
+  var copyLabel = document.getElementById('returningCopyLabel');
+  copyBtn.addEventListener('click', function() {
+    copyToClipboard(record.coupon, copyBtn, copyLabel, 'Copiar código');
+  });
+
+  /* Botón WhatsApp */
+  var waBtn  = document.getElementById('returningWaBtn');
+  waBtn.href = buildWaUrl(record.coupon);
+  waBtn.addEventListener('click', function() {
+    /* Si no estaba marcado como canjeado, marcarlo ahora */
+    if (!record.redeemedAt) {
+      storageMark('redeemedAt', Date.now());
+    }
+  });
+
+  showScreen('s-returning');
+}
+
+/* ── INICIALIZAR PANTALLA: COOLDOWN ──────────────────────────── */
+
+function initCooldownScreen(record, remainingMs) {
+  /* Mostrar el código que ya tiene */
+  document.getElementById('cooldownCode').textContent = record.coupon;
+
+  /* Botón WhatsApp con su código actual */
+  var waBtn  = document.getElementById('cooldownWaBtn');
+  waBtn.href = buildWaUrl(record.coupon);
+
+  /* Timer de espera */
+  startCooldownTimer(remainingMs);
+
+  showScreen('s-cooldown');
+}
+
+/* ── INIT PRINCIPAL ──────────────────────────────────────────── */
+
+function init() {
+  var startedAt = Date.now();
+
+  /* Siempre empezar con loader */
+  showScreen('s-loading');
+
+  /* Leer tipo desde URL */
+  var tipo = 'desconocido';
+  try {
+    tipo = new URLSearchParams(window.location.search).get('tipo') || 'desconocido';
+  } catch (e) { /* noop */ }
+
+  /* Determinar estado inicial */
+  var resolved = resolveInitialState();
+
+  /* Geo en paralelo — no bloquea nunca */
+  var geoPromise = getGeo();
+
+  /*
+     Esperar el mínimo del loader para que el logo se vea animado.
+     Si la geo tarda más, el mínimo ya habrá pasado y se muestra inmediato.
+  */
+  var minWait = new Promise(function(resolve) {
+    var elapsed = Date.now() - startedAt;
+    var wait    = Math.max(0, CONFIG.LOADER_MIN - elapsed);
+    setTimeout(resolve, wait);
+  });
+
+  minWait.then(function() {
+    try {
+      switch (resolved.state) {
+
+        case 'cooldown':
+          initCooldownScreen(resolved.record, resolved.remainingMs);
+          break;
+
+        case 'returning':
+          initReturningScreen(resolved.record);
+          break;
+
+        case 'coupon':
+        default:
+          initCouponScreen(tipo, geoPromise);
+          break;
+      }
+    } catch (err) {
+      console.error('[Nashville]', err);
+      showScreen('s-error');
+    }
+  });
+}
+
+/* ── GRAIN CANVAS ────────────────────────────────────────────── */
+/*
+   Dibuja grano de película una sola vez en un canvas.
+   Es significativamente más performante que el SVG animado anterior
+   porque: (1) se dibuja una sola vez, (2) no hace repaints continuos,
+   (3) el canvas se mantiene como una sola capa del compositor.
+*/
+function drawGrain() {
+  try {
+    var canvas = document.getElementById('grainCanvas');
+    if (!canvas) return;
+    var ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    canvas.width  = 300;
+    canvas.height = 300;
+
+    var imageData = ctx.createImageData(300, 300);
+    var data      = imageData.data;
+
+    for (var i = 0; i < data.length; i += 4) {
+      var v = Math.floor(Math.random() * 255);
+      data[i]     = v; /* R */
+      data[i + 1] = v; /* G */
+      data[i + 2] = v; /* B */
+      data[i + 3] = 255;
+    }
+
+    ctx.putImageData(imageData, 0, 0);
+
+    /* Escalar con CSS para cubrir toda la pantalla sin re-dibujar */
+    canvas.style.cssText = [
+      'position:absolute',
+      'inset:0',
+      'width:100%',
+      'height:100%',
+      'object-fit:cover',
+      'opacity:0.038',
+      'mix-blend-mode:overlay',
+      'pointer-events:none',
+    ].join(';');
+  } catch (e) {
+    /* Canvas no disponible — no es crítico */
+  }
+}
+
+/* ── ARRANCAR ────────────────────────────────────────────────── */
+
+function bootstrap() {
+  drawGrain();
   init();
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', bootstrap);
+} else {
+  bootstrap();
 }
