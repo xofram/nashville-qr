@@ -1,6 +1,6 @@
 /* ============================================================
    NASHVILLE — APP.JS v3
-   Flujo: cooldown check → loader → cupón → log → UI
+   Flujo: cooldown check → loader → cupón → [click WA] → log
    ============================================================ */
 
 // ── CONFIG ───────────────────────────────────────────────────
@@ -77,9 +77,7 @@ function logScan({ tipo, coupon, geo }) {
     city:   geo.city   ?? '',
     region: geo.region ?? '',
   });
-  setTimeout(() => {
-    fetch(`${CONFIG.SCRIPT_URL}?${params}`, { mode: 'no-cors' }).catch(() => {});
-  }, 400);
+  fetch(CONFIG.SCRIPT_URL + '?' + params.toString(), { mode: 'no-cors' }).catch(() => {});
 }
 
 // ── COUNTDOWN CUPÓN (72hs) ───────────────────────────────────
@@ -89,14 +87,14 @@ function startCouponCountdown(hours) {
   const elH = document.getElementById('cdHours');
   const elM = document.getElementById('cdMinutes');
   const elS = document.getElementById('cdSeconds');
-  const pad = n => String(n).padStart(2, '0');
-  const tick = () => {
+  const pad = function(n) { return String(n).padStart(2, '0'); };
+  function tick() {
     if (total <= 0) { elH.textContent = elM.textContent = elS.textContent = '00'; return; }
     elH.textContent = pad(Math.floor(total / 3600));
     elM.textContent = pad(Math.floor((total % 3600) / 60));
     elS.textContent = pad(total % 60);
     total--;
-  };
+  }
   tick();
   setInterval(tick, 1000);
 }
@@ -106,12 +104,12 @@ function startCouponCountdown(hours) {
 function startCooldownCountdown(remainingMs) {
   let total = Math.ceil(remainingMs / 1000);
   const el  = document.getElementById('cooldownTimer');
-  const pad = n => String(n).padStart(2, '0');
-  const tick = () => {
+  const pad = function(n) { return String(n).padStart(2, '0'); };
+  function tick() {
     if (total <= 0) { location.reload(); return; }
-    el.textContent = `${pad(Math.floor(total / 60))}:${pad(total % 60)}`;
+    el.textContent = pad(Math.floor(total / 60)) + ':' + pad(total % 60);
     total--;
-  };
+  }
   tick();
   setInterval(tick, 1000);
 }
@@ -119,91 +117,108 @@ function startCooldownCountdown(remainingMs) {
 // ── COPIAR ───────────────────────────────────────────────────
 
 function setupCopyButton(coupon) {
-  const btn   = document.getElementById('copyBtn');
-  const label = document.getElementById('copyLabel');
-  btn.addEventListener('click', async () => {
-    try {
-      await navigator.clipboard.writeText(coupon);
-    } catch {
-      const ta = document.createElement('textarea');
-      ta.value = coupon;
-      ta.style.cssText = 'position:fixed;opacity:0';
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand('copy');
-      document.body.removeChild(ta);
+  var btn   = document.getElementById('copyBtn');
+  var label = document.getElementById('copyLabel');
+  btn.addEventListener('click', function() {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(coupon).catch(function() { fallbackCopy(coupon); });
+    } else {
+      fallbackCopy(coupon);
     }
     btn.classList.add('copied');
     label.textContent = '¡Copiado!';
-    setTimeout(() => { btn.classList.remove('copied'); label.textContent = 'Copiar código'; }, 2400);
+    setTimeout(function() {
+      btn.classList.remove('copied');
+      label.textContent = 'Copiar código';
+    }, 2400);
   });
+}
+
+function fallbackCopy(text) {
+  var ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  try { document.execCommand('copy'); } catch(e) {}
+  document.body.removeChild(ta);
 }
 
 // ── PANTALLAS ────────────────────────────────────────────────
 
 function showScreen(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.add('is-hidden'));
+  document.querySelectorAll('.screen').forEach(function(s) {
+    s.classList.add('is-hidden');
+  });
   document.getElementById(id).classList.remove('is-hidden');
 }
 
 // ── INIT ─────────────────────────────────────────────────────
 
-async function init() {
+function init() {
+  var startedAt = Date.now();
   showScreen('screenLoading');
 
-  // 1. Cooldown check
-  const remainingMs = getRemainingCooldownMs();
+  // 1. Cooldown check — antes de hacer cualquier otra cosa
+  var remainingMs = getRemainingCooldownMs();
   if (remainingMs > 0) {
     showScreen('screenCooldown');
     startCooldownCountdown(remainingMs);
     return;
   }
 
-  try {
-    // 2. Tipo desde URL
-    const tipo = new URLSearchParams(window.location.search).get('tipo') || 'desconocido';
+  // 2. Tipo desde URL
+  var tipo = new URLSearchParams(window.location.search).get('tipo') || 'desconocido';
 
-    // 3. Generar cupón
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    let coupon  = 'NASH-';
-    for (let i = 0; i < 4; i++) coupon += chars[Math.floor(Math.random() * chars.length)];
-
-    // 4. Geo (no bloquea si falla)
-    const geo = await getGeo();
-
-    // 5. Guardar cooldown en el dispositivo
-    saveCooldownState(coupon);
-
-    // 6. Log → Sheet
-    logScan({ tipo, coupon, geo });
-
-    // 7. Poblar UI
-    document.getElementById('couponCode').textContent = coupon;
-
-    const msg = [
-      '¡Hola Nashville! 🍔 Vi su poster por el barrio y no pude resistirme.',
-      'Quiero canjear mi cupón del 5% OFF.',
-      `Mi código es: *${coupon}*`,
-      '¿Cuándo puedo hacer mi pedido?',
-    ].join('\n');
-
-    document.getElementById('waBtn').href =
-      `https://wa.me/${CONFIG.WA_NUMBER}?text=${encodeURIComponent(msg)}`;
-
-    // 8. Extras
-    setupCopyButton(coupon);
-    startCouponCountdown(CONFIG.COUPON_EXPIRY);
-
-    // 9. Mostrar — loader mínimo 800ms para que se vea el logo
-    const wait = Math.max(0, 800 - performance.now());
-    setTimeout(() => showScreen('screenCoupon'), wait);
-
-  } catch (err) {
-    console.error('[Nashville]', err);
-    showScreen('screenError');
+  // 3. Generar cupón
+  var chars  = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  var coupon = 'NASH-';
+  for (var i = 0; i < 4; i++) {
+    coupon += chars[Math.floor(Math.random() * chars.length)];
   }
+
+  // 4. Guardar cooldown en el dispositivo YA
+  //    (antes de la geo, para que aunque falle todo, no genere de nuevo)
+  saveCooldownState(coupon);
+
+  // 5. Geo en paralelo — no bloquea la UI
+  var geoPromise = getGeo();
+
+  // 6. Poblar UI inmediatamente
+  document.getElementById('couponCode').textContent = coupon;
+
+  var msg = [
+    '¡Hola Nashville! 🍔 Vi su poster por el barrio y no pude resistirme.',
+    'Quiero canjear mi cupón del 5% OFF.',
+    'Mi código es: *' + coupon + '*',
+    '¿Cuándo puedo hacer mi pedido?',
+  ].join('\n');
+
+  var waBtn = document.getElementById('waBtn');
+  waBtn.href = 'https://wa.me/' + CONFIG.WA_NUMBER + '?text=' + encodeURIComponent(msg);
+
+  // 7. Registrar en Sheet SOLO cuando el usuario toca WhatsApp
+  var logged = false;
+  waBtn.addEventListener('click', function() {
+    if (logged) return;
+    logged = true;
+    geoPromise.then(function(geo) {
+      logScan({ tipo: tipo, coupon: coupon, geo: geo });
+    });
+  });
+
+  // 8. Extras
+  setupCopyButton(coupon);
+  startCouponCountdown(CONFIG.COUPON_EXPIRY);
+
+  // 9. Loader mínimo 900ms para que el logo se vea animado
+  var elapsed = Date.now() - startedAt;
+  var wait    = Math.max(0, 900 - elapsed);
+  setTimeout(function() { showScreen('screenCoupon'); }, wait);
 }
 
+// Arrancar cuando el DOM esté listo
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', init);
 } else {
