@@ -3,307 +3,225 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#07060400">
-  <meta name="description" content="Nashville Hamburguesas — Canjeá tu cupón de descuento">
-  <title>Nashville 🍔 — Tu cupón</title>
-
-  <!-- Fuentes: Playfair Display (serif dramático) + Barlow Condensed (bold display) + JetBrains Mono (código) -->
+  <meta name="theme-color" content="#080706">
+  <title>Nashville — Tu cupón</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Barlow+Condensed:wght@400;600;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Barlow+Condensed:wght@600;700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <!--
-    ARQUITECTURA DE PANTALLAS
-    Cada .screen es un estado del sistema.
-    Solo una es visible a la vez — controlado por app.js.
-    Todas comparten el mismo fondo animado.
-  -->
-
-  <!-- ═══════════════════════════════════════════
-       FONDO GLOBAL — persiste en todos los estados
-       Orbes de luz dorada + textura de grano
-  ════════════════════════════════════════════════ -->
-  <div class="scene" aria-hidden="true">
-    <div class="scene__orb scene__orb--a"></div>
-    <div class="scene__orb scene__orb--b"></div>
-    <div class="scene__orb scene__orb--c"></div>
-    <canvas class="scene__grain" id="grainCanvas"></canvas>
+  <!-- Fondo animado — fixed, detrás de todo -->
+  <div class="bg">
+    <div class="bg__orb bg__orb--1"></div>
+    <div class="bg__orb bg__orb--2"></div>
+    <div class="bg__orb bg__orb--3"></div>
+    <div class="bg__grain"></div>
   </div>
 
-  <!-- ═══════════════════════════════════════════
-       ESTADO: loading
-       Loader con logo + anillo + texto pulsante
-  ════════════════════════════════════════════════ -->
-  <div class="screen" id="s-loading" data-state="loading">
+  <!-- LOADER -->
+  <div class="screen" id="s-loading">
     <div class="loader">
-      <div class="loader__badge">
-        <img src="4_Isologo.png" alt="Nashville" class="loader__logo" width="80" height="80">
-        <svg class="loader__ring" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="50" cy="50" r="46" stroke="url(#ringGrad)" stroke-width="1.5" stroke-linecap="round"
-            stroke-dasharray="72 216" >
+      <div class="loader__ring-wrap">
+        <img src="4_Isologo.png" alt="Nashville" width="68" height="68" class="loader__img">
+        <svg class="loader__ring" viewBox="0 0 80 80" fill="none">
+          <circle cx="40" cy="40" r="36" stroke="url(#rg)" stroke-width="1.5" stroke-linecap="round"
+            stroke-dasharray="56 170">
             <animateTransform attributeName="transform" type="rotate"
-              from="0 50 50" to="360 50 50" dur="1.4s" repeatCount="indefinite"/>
+              from="0 40 40" to="360 40 40" dur="1.3s" repeatCount="indefinite"/>
           </circle>
           <defs>
-            <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <linearGradient id="rg" x1="0%" y1="0%" x2="100%" y2="0%">
               <stop offset="0%" stop-color="#f0c040" stop-opacity="0"/>
               <stop offset="100%" stop-color="#f0c040"/>
             </linearGradient>
           </defs>
         </svg>
       </div>
-      <p class="loader__label">Preparando tu cupón</p>
-      <div class="loader__dots" aria-hidden="true">
-        <span></span><span></span><span></span>
-      </div>
+      <p class="loader__text">Preparando tu cupón…</p>
     </div>
   </div>
 
-  <!-- ═══════════════════════════════════════════
-       ESTADO: coupon
-       Pantalla principal — primera vez
-  ════════════════════════════════════════════════ -->
-  <div class="screen is-off" id="s-coupon" data-state="coupon">
+  <!-- CUPÓN — primera vez -->
+  <div class="screen off" id="s-coupon">
     <div class="page">
-
-      <!-- Marca -->
-      <header class="brand" role="banner">
-        <img src="4_Isologo.png" alt="Logo Nashville" class="brand__logo" width="48" height="48">
-        <div class="brand__wordmark">
-          <span class="brand__name">NASH<em>VILLE</em></span>
-          <span class="brand__city">Hamburguesas · Córdoba</span>
+      <header class="header">
+        <img src="4_Isologo.png" alt="Nashville" width="44" height="44" class="header__logo">
+        <div>
+          <p class="header__name">NASH<em>VILLE</em></p>
+          <p class="header__sub">Hamburguesas · Córdoba</p>
         </div>
       </header>
 
-      <!-- Card cupón -->
-      <article class="ticket" aria-label="Tu cupón de descuento exclusivo">
+      <div class="card">
+        <div class="card__shine"></div>
 
-        <!-- Brillo glass interno -->
-        <div class="ticket__gloss" aria-hidden="true"></div>
-
-        <!-- Parte superior: oferta -->
-        <div class="ticket__face">
-          <p class="ticket__eyebrow">✦ Cupón exclusivo ✦</p>
-
-          <div class="ticket__hero">
-            <span class="ticket__pct">5<sup>%</sup></span>
-            <span class="ticket__off">OFF</span>
+        <!-- Oferta -->
+        <div class="card__top">
+          <p class="card__tag">✦ Cupón exclusivo ✦</p>
+          <div class="card__offer">
+            <span class="card__pct">5<sup>%</sup></span>
+            <span class="card__off">OFF</span>
           </div>
-
-          <p class="ticket__desc">en tu primer pedido</p>
+          <p class="card__sub">en tu primer pedido</p>
         </div>
 
-        <!-- Separador físico tipo ticket de papel -->
-        <div class="ticket__tear" aria-hidden="true">
-          <div class="ticket__hole ticket__hole--l"></div>
-          <div class="ticket__dots"></div>
-          <div class="ticket__hole ticket__hole--r"></div>
+        <!-- Perforación -->
+        <div class="tear">
+          <div class="tear__hole tear__hole--l"></div>
+          <div class="tear__line"></div>
+          <div class="tear__hole tear__hole--r"></div>
         </div>
 
-        <!-- Parte inferior: código + cuenta -->
-        <div class="ticket__stub">
+        <!-- Código -->
+        <div class="card__bot">
+          <p class="card__codelabel">Tu código</p>
+          <p class="card__code" id="couponCode">· · · ·</p>
+          <button class="copybtn" id="copyBtn" type="button">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+            </svg>
+            <span id="copyLabel">Copiar</span>
+          </button>
 
-          <div class="stub__code-section">
-            <p class="stub__label">Tu código personal</p>
-            <p class="stub__code" id="couponDisplay">· · · ·</p>
-            <button class="stub__copy" id="copyBtn" type="button" aria-label="Copiar código al portapapeles">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <rect x="9" y="9" width="13" height="13" rx="2"/>
-                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-              </svg>
-              <span class="stub__copy-label" id="copyLabel">Copiar</span>
-            </button>
+          <div class="card__sep"></div>
+
+          <!-- Timer -->
+          <p class="card__timelabel">Expira en</p>
+          <div class="cdown" id="cdown">
+            <div class="cdown__blk"><span class="cdown__n" id="cdH">72</span><span class="cdown__u">hs</span></div>
+            <span class="cdown__sep">:</span>
+            <div class="cdown__blk"><span class="cdown__n" id="cdM">00</span><span class="cdown__u">min</span></div>
+            <span class="cdown__sep">:</span>
+            <div class="cdown__blk"><span class="cdown__n" id="cdS">00</span><span class="cdown__u">seg</span></div>
           </div>
-
-          <div class="stub__divider" aria-hidden="true"></div>
-
-          <div class="stub__timer-section" aria-live="polite" aria-label="Tiempo restante para usar el cupón">
-            <p class="stub__label">Expira en</p>
-            <div class="timer" id="couponTimer">
-              <div class="timer__block">
-                <span class="timer__num" id="cdH">72</span>
-                <span class="timer__unit">hs</span>
-              </div>
-              <span class="timer__sep" aria-hidden="true">:</span>
-              <div class="timer__block">
-                <span class="timer__num" id="cdM">00</span>
-                <span class="timer__unit">min</span>
-              </div>
-              <span class="timer__sep" aria-hidden="true">:</span>
-              <div class="timer__block">
-                <span class="timer__num" id="cdS">00</span>
-                <span class="timer__unit">seg</span>
-              </div>
-            </div>
-          </div>
-
-          <p class="stub__fine">Canjeable al pedir · No acumulable con otras promos</p>
-
         </div>
-      </article>
+      </div>
 
-      <!-- CTA principal -->
-      <a class="cta-wa" id="waBtn" href="#" role="button">
-        <svg class="cta-wa__icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <a class="wabtn" id="waBtn" href="#">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
           <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
         </svg>
         Canjear por WhatsApp
       </a>
-
-      <p class="page__foot">Al tocar se abre WhatsApp con el mensaje listo ✓</p>
-
+      <p class="hint">Se abre WhatsApp con el mensaje listo ✓</p>
     </div>
   </div>
 
-  <!-- ═══════════════════════════════════════════
-       ESTADO: returning
-       Usuario que ya canjeó — muestra su código
-  ════════════════════════════════════════════════ -->
-  <div class="screen is-off" id="s-returning" data-state="returning">
+  <!-- YA TENÉS UNO — cupón vigente, cooldown pasado -->
+  <div class="screen off" id="s-returning">
     <div class="page">
-
-      <header class="brand" role="banner">
-        <img src="4_Isologo.png" alt="Logo Nashville" class="brand__logo" width="48" height="48">
-        <div class="brand__wordmark">
-          <span class="brand__name">NASH<em>VILLE</em></span>
-          <span class="brand__city">Hamburguesas · Córdoba</span>
+      <header class="header">
+        <img src="4_Isologo.png" alt="Nashville" width="44" height="44" class="header__logo">
+        <div>
+          <p class="header__name">NASH<em>VILLE</em></p>
+          <p class="header__sub">Hamburguesas · Córdoba</p>
         </div>
       </header>
 
-      <article class="status-card status-card--gold" aria-label="Estado de tu cupón">
-        <div class="status-card__gloss" aria-hidden="true"></div>
-
-        <div class="status-card__icon" aria-hidden="true">
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-            <polyline points="22 4 12 14.01 9 11.01"/>
+      <div class="card card--status">
+        <div class="card__shine"></div>
+        <div class="status__icon status__icon--green">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
           </svg>
         </div>
+        <h1 class="status__title">¡Tu cupón está activo!</h1>
+        <p class="status__desc">Este es tu código de descuento</p>
 
-        <h1 class="status-card__title">¡Tu cupón está activo!</h1>
-        <p class="status-card__msg">Ya generaste tu descuento. Este es tu código:</p>
-
-        <div class="status-card__code-wrap">
-          <p class="status-card__code" id="returningCode">NASH-····</p>
-          <button class="stub__copy stub__copy--lg" id="returningCopyBtn" type="button" aria-label="Copiar código">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <rect x="9" y="9" width="13" height="13" rx="2"/>
-              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+        <div class="status__codewrap">
+          <p class="card__code" id="retCode">NASH-····</p>
+          <button class="copybtn copybtn--center" id="retCopyBtn" type="button">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
             </svg>
-            <span id="returningCopyLabel">Copiar código</span>
+            <span id="retCopyLabel">Copiar código</span>
           </button>
         </div>
 
-        <div class="status-card__meta">
-          <div class="meta-row">
-            <span class="meta-row__label">Generado</span>
-            <span class="meta-row__value" id="returningDate">—</span>
+        <div class="status__meta">
+          <div class="meta__row">
+            <span>Generado</span><span id="retDate">—</span>
           </div>
-          <div class="meta-row">
-            <span class="meta-row__label">Vence</span>
-            <span class="meta-row__value" id="returningExpiry">—</span>
+          <div class="meta__row">
+            <span>Vence</span><span id="retExpiry">—</span>
           </div>
-          <div class="meta-row">
-            <span class="meta-row__label">Estado</span>
-            <span class="meta-row__value meta-row__value--badge" id="returningStatus">Pendiente</span>
+          <div class="meta__row">
+            <span>Estado</span>
+            <span class="meta__badge" id="retStatus">Pendiente</span>
           </div>
         </div>
+      </div>
 
-      </article>
-
-      <a class="cta-wa" id="returningWaBtn" href="#" role="button">
-        <svg class="cta-wa__icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <a class="wabtn" id="retWaBtn" href="#">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
           <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
         </svg>
         Escribirnos por WhatsApp
       </a>
-
-      <p class="page__foot">Tu código ya está listo para canjear 🍔</p>
-
+      <p class="hint">Tu código ya está listo para canjear 🍔</p>
     </div>
   </div>
 
-  <!-- ═══════════════════════════════════════════
-       ESTADO: cooldown
-       Generó hace poco — mostrar timer + su código
-  ════════════════════════════════════════════════ -->
-  <div class="screen is-off" id="s-cooldown" data-state="cooldown">
+  <!-- COOLDOWN — generó hace poco -->
+  <div class="screen off" id="s-cooldown">
     <div class="page">
-
-      <header class="brand" role="banner">
-        <img src="4_Isologo.png" alt="Logo Nashville" class="brand__logo" width="48" height="48">
-        <div class="brand__wordmark">
-          <span class="brand__name">NASH<em>VILLE</em></span>
-          <span class="brand__city">Hamburguesas · Córdoba</span>
+      <header class="header">
+        <img src="4_Isologo.png" alt="Nashville" width="44" height="44" class="header__logo">
+        <div>
+          <p class="header__name">NASH<em>VILLE</em></p>
+          <p class="header__sub">Hamburguesas · Córdoba</p>
         </div>
       </header>
 
-      <article class="status-card status-card--amber" aria-label="Tiempo de espera">
-        <div class="status-card__gloss" aria-hidden="true"></div>
-
-        <div class="status-card__icon" aria-hidden="true">
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"/>
-            <polyline points="12 6 12 12 16 14"/>
+      <div class="card card--status">
+        <div class="card__shine"></div>
+        <div class="status__icon status__icon--amber">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
           </svg>
         </div>
+        <h1 class="status__title">Ya tenés uno activo</h1>
+        <p class="status__desc">Podés pedir uno nuevo en</p>
+        <p class="cooldown__timer" id="cdTimer">15:00</p>
+        <div class="card__sep"></div>
+        <p class="card__codelabel">Tu código activo</p>
+        <p class="card__code" id="cdCode">NASH-····</p>
+      </div>
 
-        <h1 class="status-card__title">Ya tenés uno activo</h1>
-        <p class="status-card__msg">Por seguridad, un cupón por dispositivo cada 15 minutos. Podés generar uno nuevo en:</p>
-
-        <p class="cooldown-timer" id="cooldownDisplay" aria-live="polite">15:00</p>
-
-        <div class="status-card__divider" aria-hidden="true"></div>
-
-        <p class="status-card__sub">Tu código activo</p>
-        <p class="status-card__code" id="cooldownCode">NASH-····</p>
-
-      </article>
-
-      <a class="cta-wa cta-wa--ghost" id="cooldownWaBtn" href="#" role="button">
-        <svg class="cta-wa__icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <a class="wabtn wabtn--ghost" id="cdWaBtn" href="#">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
           <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
         </svg>
-        Canjear con el código actual
+        Canjear con este código
       </a>
-
-      <p class="page__foot">Cuando el timer llegue a cero, esta página se actualiza sola</p>
-
+      <p class="hint">La página se actualiza sola cuando expire el tiempo</p>
     </div>
   </div>
 
-  <!-- ═══════════════════════════════════════════
-       ESTADO: error
-       Fallback cuando algo falla
-  ════════════════════════════════════════════════ -->
-  <div class="screen is-off" id="s-error" data-state="error">
+  <!-- ERROR -->
+  <div class="screen off" id="s-error">
     <div class="page">
-      <header class="brand" role="banner">
-        <img src="4_Isologo.png" alt="Logo Nashville" class="brand__logo" width="48" height="48">
-        <div class="brand__wordmark">
-          <span class="brand__name">NASH<em>VILLE</em></span>
-          <span class="brand__city">Hamburguesas · Córdoba</span>
+      <header class="header">
+        <img src="4_Isologo.png" alt="Nashville" width="44" height="44" class="header__logo">
+        <div>
+          <p class="header__name">NASH<em>VILLE</em></p>
+          <p class="header__sub">Hamburguesas · Córdoba</p>
         </div>
       </header>
-      <article class="status-card status-card--muted">
-        <div class="status-card__gloss" aria-hidden="true"></div>
-        <div class="status-card__icon" aria-hidden="true">
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"/>
-            <line x1="12" y1="8" x2="12" y2="12"/>
-            <line x1="12" y1="16" x2="12.01" y2="16"/>
+      <div class="card card--status">
+        <div class="card__shine"></div>
+        <div class="status__icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
           </svg>
         </div>
-        <h1 class="status-card__title">Algo falló</h1>
-        <p class="status-card__msg">No pudimos generar tu cupón. Escribinos directamente y te hacemos el descuento igual. Somos humanos, no robots.</p>
-      </article>
-      <a class="cta-wa" href="https://wa.me/5493517886903" role="button">
-        <svg class="cta-wa__icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <h1 class="status__title">Algo salió mal</h1>
+        <p class="status__desc">Escribinos directamente y te hacemos el descuento igual.</p>
+      </div>
+      <a class="wabtn" href="https://wa.me/5493517886903">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
           <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
         </svg>
         Contactar por WhatsApp
