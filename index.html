@@ -145,7 +145,7 @@
 
   <script>
     // ─── CONFIG ────────────────────────────────────────────────
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxtOCmyr7VOyL0TgwC2kfcx2wCLvH6G0vSF1LKCxZimcjN8zoKFU6SZzXWQYYqr-A-luA/exec'; // ← pegá la URL del deploy de Apps Script
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwGbHzq1q0QAu550lZOy3V4YET-JnBeFVYa1M6YWwgo9avp2hN6fJ0OJs6fr5GCeKuaew/exec';
     const WA_NUMBER  = '5493517886903';
     // ───────────────────────────────────────────────────────────
 
@@ -176,8 +176,8 @@
     const waUrl   = 'https://wa.me/' + WA_NUMBER + '?text=' + encoded;
     document.getElementById('waBtn').href = waUrl;
 
-    // Log con geo real → Apps Script
-    fetch('https://ip-api.com/json/?fields=status,lat,lon,city,regionName')
+    // Log al backend con geo real + IP para rate limiting + User-Agent
+    fetch('https://ip-api.com/json/?fields=status,lat,lon,city,regionName,query')
       .then(r => r.json())
       .then(geo => {
         const p = new URLSearchParams({
@@ -186,12 +186,15 @@
           lat:    geo.status === 'success' ? geo.lat        : '',
           lon:    geo.status === 'success' ? geo.lon        : '',
           city:   geo.status === 'success' ? geo.city       : '',
-          region: geo.status === 'success' ? geo.regionName : ''
+          region: geo.status === 'success' ? geo.regionName : '',
+          ip:     geo.status === 'success' ? geo.query      : '',
+          ua:     navigator.userAgent.substring(0, 150)
         });
         fetch(SCRIPT_URL + '?' + p.toString(), { mode: 'no-cors' });
       })
       .catch(() => {
-        fetch(SCRIPT_URL + '?tipo=' + tipo + '&coupon=' + coupon, { mode: 'no-cors' });
+        const p = new URLSearchParams({ tipo, coupon, ua: navigator.userAgent.substring(0, 150) });
+        fetch(SCRIPT_URL + '?' + p.toString(), { mode: 'no-cors' });
       });
   </script>
 </body>
