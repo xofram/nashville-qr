@@ -1,0 +1,420 @@
+/* ============================================================
+   NASHVILLE — STYLE
+   Tipografía: Barlow Condensed (display) + DM Sans (body)
+   Paleta: negro carbón · amarillo fuego · blanco humo
+   ============================================================ */
+
+/* ── Variables ─────────────────────────────────────────────── */
+:root {
+  --c-bg:        #0d0c0b;
+  --c-surface:   #161410;
+  --c-border:    rgba(245, 166, 35, 0.22);
+  --c-yellow:    #f5a623;
+  --c-yellow-dim:#c4821a;
+  --c-white:     #f0ece4;
+  --c-muted:     rgba(240, 236, 228, 0.35);
+  --c-faint:     rgba(240, 236, 228, 0.14);
+  --c-wa:        #25D366;
+  --c-wa-glow:   rgba(37, 211, 102, 0.28);
+  --r-card:      22px;
+  --r-btn:       50px;
+}
+
+/* ── Reset ─────────────────────────────────────────────────── */
+*, *::before, *::after {
+  margin: 0; padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--c-bg);
+  color: var(--c-white);
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: env(safe-area-inset-top, 20px) 20px env(safe-area-inset-bottom, 20px);
+  overflow-x: hidden;
+}
+
+/* ── Fondo decorativo ──────────────────────────────────────── */
+.bg-texture {
+  position: fixed; inset: 0;
+  pointer-events: none;
+  background-image:
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 300 300' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.055'/%3E%3C/svg%3E");
+  z-index: 0;
+}
+
+.bg-glow {
+  position: fixed;
+  top: -30vh; left: 50%;
+  transform: translateX(-50%);
+  width: 80vw; height: 60vw;
+  max-width: 500px; max-height: 400px;
+  background: radial-gradient(ellipse at center, rgba(245,166,35,0.09) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Screens ───────────────────────────────────────────────── */
+.screen {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 390px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+}
+
+.hidden { display: none !important; }
+
+/* ── Loader ────────────────────────────────────────────────── */
+.loader {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+}
+
+.loader span {
+  display: block;
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--c-yellow);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+.loader span:nth-child(2) { animation-delay: 0.2s; }
+.loader span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes pulse {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.3; }
+  40%           { transform: scale(1);   opacity: 1;   }
+}
+
+/* ── Card principal ────────────────────────────────────────── */
+.card {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 32px 20px 28px;
+  animation: fadeUp 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(28px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Logo ──────────────────────────────────────────────────── */
+.logo-wrap {
+  animation: fadeUp 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.05s both;
+}
+
+.logo {
+  width: 100px; height: 100px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 18px rgba(245,166,35,0.25));
+}
+
+/* ── Marca ─────────────────────────────────────────────────── */
+.brand-row {
+  text-align: center;
+  animation: fadeUp 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
+}
+
+.brand {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 900;
+  font-size: clamp(64px, 22vw, 96px);
+  letter-spacing: 0.04em;
+  line-height: 0.9;
+  color: var(--c-white);
+  text-transform: uppercase;
+}
+
+.brand em {
+  font-style: normal;
+  color: var(--c-yellow);
+}
+
+.brand-sub {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.28em;
+  color: var(--c-muted);
+  margin-top: 4px;
+  text-transform: uppercase;
+}
+
+/* ── Cupón ─────────────────────────────────────────────────── */
+.coupon {
+  position: relative;
+  width: 100%;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-card);
+  padding: 24px 28px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  overflow: hidden;
+  animation: fadeUp 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.17s both;
+
+  /* Brillo superior sutil */
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 10%; right: 10%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(245,166,35,0.5), transparent);
+  }
+}
+
+/* Muescas laterales de ticket */
+.coupon-edge {
+  position: absolute;
+  top: 50%; transform: translateY(-50%);
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: var(--c-bg);
+  border: 1px solid var(--c-border);
+}
+.coupon-edge--left  { left: -10px; }
+.coupon-edge--right { right: -10px; }
+
+.coupon-label {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--c-muted);
+  font-weight: 500;
+}
+
+.coupon-code {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 900;
+  font-size: clamp(40px, 13vw, 56px);
+  letter-spacing: 0.12em;
+  color: var(--c-yellow);
+  line-height: 1;
+  margin: 6px 0 2px;
+  text-shadow: 0 0 30px rgba(245,166,35,0.35);
+  transition: opacity 0.3s;
+}
+
+.coupon-offer {
+  font-size: 12px;
+  color: var(--c-muted);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+/* Botón copiar */
+.copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 7px 16px;
+  background: var(--c-faint);
+  border: 1px solid var(--c-border);
+  border-radius: 50px;
+  color: var(--c-muted);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s, transform 0.1s;
+}
+.copy-btn svg { width: 13px; height: 13px; }
+.copy-btn:active { transform: scale(0.96); }
+
+.copy-btn.copied {
+  background: rgba(245,166,35,0.12);
+  border-color: var(--c-yellow);
+  color: var(--c-yellow);
+}
+
+/* Divisor punteado tipo ticket */
+.coupon-divider {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin: 14px 0 10px;
+}
+.coupon-divider span:first-child,
+.coupon-divider span:last-child {
+  flex: 1;
+  height: 1px;
+  background: var(--c-border);
+}
+.dot-row {
+  font-size: 0;
+  width: 8px; height: 1px;
+  background: transparent;
+  border-top: 1px dashed var(--c-border);
+  flex: 2 !important;
+}
+
+/* ── Cuenta regresiva ──────────────────────────────────────── */
+.countdown { text-align: center; }
+
+.countdown-label {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--c-muted);
+  margin-bottom: 8px;
+}
+
+.countdown-grid {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.countdown-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 48px;
+  background: rgba(245,166,35,0.07);
+  border: 1px solid rgba(245,166,35,0.15);
+  border-radius: 8px;
+  padding: 6px 10px 4px;
+}
+
+.countdown-num {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 900;
+  font-size: 28px;
+  line-height: 1;
+  color: var(--c-yellow);
+  letter-spacing: 0.04em;
+}
+
+.countdown-unit {
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--c-muted);
+  margin-top: 1px;
+}
+
+.countdown-sep {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 900;
+  font-size: 22px;
+  color: var(--c-yellow-dim);
+  align-self: center;
+  margin-bottom: 8px;
+}
+
+/* ── Botón WhatsApp ────────────────────────────────────────── */
+.wa-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 18px 24px;
+  background: var(--c-wa);
+  color: #fff;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 19px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-radius: var(--r-btn);
+  text-decoration: none;
+  box-shadow: 0 6px 28px var(--c-wa-glow);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+  animation: fadeUp 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.28s both;
+  -webkit-user-select: none; user-select: none;
+}
+
+.wa-btn:active {
+  transform: scale(0.97);
+  box-shadow: 0 2px 12px var(--c-wa-glow);
+  opacity: 0.92;
+}
+
+.wa-icon {
+  width: 22px; height: 22px;
+  fill: #fff;
+  flex-shrink: 0;
+}
+
+.wa-btn--alt {
+  background: rgba(37,211,102,0.12);
+  border: 1px solid rgba(37,211,102,0.4);
+  color: var(--c-wa);
+  box-shadow: none;
+}
+.wa-btn--alt .wa-icon { fill: var(--c-wa); }
+
+/* ── Footer note ───────────────────────────────────────────── */
+.footer-note {
+  font-size: 11px;
+  color: var(--c-faint);
+  line-height: 1.5;
+  text-align: center;
+  animation: fadeUp 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.34s both;
+}
+
+/* ── Pantalla de error ─────────────────────────────────────── */
+.error-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 40px 28px;
+  text-align: center;
+  animation: fadeUp 0.45s ease both;
+}
+
+.error-icon { font-size: 48px; }
+
+.error-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 900;
+  font-size: 32px;
+  letter-spacing: 0.04em;
+  color: var(--c-white);
+}
+
+.error-msg {
+  font-size: 15px;
+  color: var(--c-muted);
+  line-height: 1.55;
+  max-width: 280px;
+}
+
+/* ── Accesibilidad ─────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── Pantallas muy pequeñas ────────────────────────────────── */
+@media (max-height: 650px) {
+  .card { gap: 14px; padding: 20px 16px; }
+  .logo { width: 72px; height: 72px; }
+  .brand { font-size: 56px; }
+}
