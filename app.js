@@ -11,7 +11,7 @@ var CFG = {
   SCRIPT:   'https://script.google.com/macros/s/AKfycbwpidh1tETWntQFplSNmdbCy7KAFSlrtBF_O3TnTkezzPIBcbpooNvsQDVRoORuijxwgg/exec',
   WA:       '5493517886903',
   EXPIRY_H: 72,
-  COOL_MIN: 15,
+  COOL_MIN: 10080, /* 7 días = 7 × 24 × 60 min */
   GEO_MS:   3500,
   LOAD_MS:  950,
   KEY:      'nash_v2',
@@ -169,7 +169,18 @@ function startCoolTimer(endAt) {
   (function tick(){
     var rem = Math.max(0, endAt - Date.now());
     var t   = Math.floor(rem/1000);
-    el.textContent = pad(Math.floor(t/60)) + ':' + pad(t%60);
+    var d   = Math.floor(t / 86400);
+    var h   = Math.floor((t % 86400) / 3600);
+    var m   = Math.floor((t % 3600) / 60);
+    var s   = t % 60;
+    /* Si quedan más de 1 día mostrar "Xd Yh", si no MM:SS */
+    if (d > 0) {
+      el.textContent = d + 'd ' + pad(h) + 'h';
+    } else if (h > 0) {
+      el.textContent = pad(h) + ':' + pad(m) + 'h';
+    } else {
+      el.textContent = pad(m) + ':' + pad(s);
+    }
     if (rem <= 0) { location.reload(); }
     else setTimeout(tick, 1000);
   })();
