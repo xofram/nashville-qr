@@ -5,7 +5,7 @@
 
 // ── CONFIG — editá solo esta sección ────────────────────────
 const CONFIG = {
-  SCRIPT_URL:     'https://script.google.com/macros/s/AKfycbyZ5bY4Nql3DDlH4uB6XE62bmhuYWkkqBpItZHrferuaaBhHNnzyaIFCDmd65jNt3Z91Q/exec',   // ← URL del deploy de Apps Script
+  SCRIPT_URL:     'https://script.google.com/macros/s/AKfycbxY2gzL8OgKvxv_xFSvFqX6izVqxiD5OKe9ZGS9ooBMm7wS-PGhSddr3vX98TYRkXmJfQ/exec',   // ← URL del deploy de Apps Script
   WA_NUMBER:      '5493517886903',
   COUPON_EXPIRY:  72,                           // horas
   GEO_TIMEOUT:    3000,                         // ms para abandonar geo si tarda
